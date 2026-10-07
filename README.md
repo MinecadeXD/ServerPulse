@@ -26,3 +26,22 @@ Then open `http://localhost:3000`.
 ## Note
 
 Latency is measured from the browser to the HTTP server endpoint. If the deployment uses a CDN or reverse proxy, the measured endpoint may be an edge server rather than the origin server.
+
+
+## Environment configuration
+
+Set the port manually with a `.env` file:
+
+```env
+PORT=3000
+```
+
+Start the server with:
+
+```bash
+npm start
+```
+
+The server reads `PORT` from the environment. If it is not set, it falls back to port `3000`.
+
+For deployment, set the `PORT` environment variable provided by your hosting service to the port you want ServerPulse to listen on.
