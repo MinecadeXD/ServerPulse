@@ -7,8 +7,8 @@ const { URL } = require("url");
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC = path.join(__dirname, "public");
-const DOWNLOAD_SIZE = 10 * 1024 * 1024;
-const CHUNK = Buffer.alloc(64 * 1024, 0);
+const DOWNLOAD_SIZE = 5 * 1024 * 1024;
+const CHUNK = Buffer.alloc(256 * 1024, 0);
 
 function send(res, status, body, type = "application/json") {
   res.writeHead(status, {
