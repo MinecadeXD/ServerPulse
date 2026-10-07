@@ -106,7 +106,7 @@ async function runBandwidth() {
   $("bandwidth-status").textContent = "Testing download…";
   setProgress("bandwidth-progress", 0);
 
-  const size = 5 * 1024 * 1024;
+  const size = 2 * 1024 * 1024;
 
   try {
     const start = performance.now();
