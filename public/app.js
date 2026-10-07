@@ -98,6 +98,34 @@ async function runLatency() {
   latencyButton.textContent = "Test again";
 }
 
+function uploadWithProgress(data, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const start = performance.now();
+
+    xhr.open("POST", `/api/upload?t=${Date.now()}`, true);
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+
+    xhr.upload.addEventListener("progress", event => {
+      if (event.lengthComputable) {
+        onProgress(event.loaded, event.total);
+      }
+    });
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve((performance.now() - start) / 1000);
+      } else {
+        reject(new Error("Upload failed"));
+      }
+    });
+
+    xhr.addEventListener("error", () => reject(new Error("Upload failed")));
+    xhr.addEventListener("abort", () => reject(new Error("Upload aborted")));
+    xhr.send(data);
+  });
+}
+
 async function runBandwidth() {
   bandwidthButton.disabled = true;
   bandwidthButton.textContent = "Testing…";
@@ -126,16 +154,10 @@ async function runBandwidth() {
 
     $("bandwidth-status").textContent = "Testing upload…";
     const uploadData = new Uint8Array(size);
-    const uploadStart = performance.now();
-    const uploadResponse = await fetch(`/api/upload?t=${Date.now()}`, {
-      method: "POST",
-      body: uploadData,
-      cache: "no-store",
-      headers: { "Content-Type": "application/octet-stream" },
+    const uploadSeconds = await uploadWithProgress(uploadData, (loaded, total) => {
+      setProgress("bandwidth-progress", 50 + (loaded / total * 50));
     });
-    if (!uploadResponse.ok) throw new Error("Upload failed");
 
-    const uploadSeconds = (performance.now() - uploadStart) / 1000;
     $("upload-value").textContent = formatMbps(size, uploadSeconds);
     setProgress("bandwidth-progress", 100);
     $("bandwidth-status").textContent = "Test complete";
