@@ -7,8 +7,8 @@ const { URL } = require("url");
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC = path.join(__dirname, "public");
-const DOWNLOAD_SIZE = 5 * 1024 * 1024;
-const CHUNK = Buffer.alloc(256 * 1024, 0);
+const BANDWIDTH_SIZE = 2 * 1024 * 1024;
+const DOWNLOAD_BUFFER = Buffer.alloc(BANDWIDTH_SIZE, 0);
 
 function send(res, status, body, type = "application/json") {
   res.writeHead(status, {
@@ -28,33 +28,24 @@ function latency(res) {
 }
 
 function download(res, requestedSize) {
-  const size = Math.min(Math.max(Number(requestedSize) || DOWNLOAD_SIZE, 1 * 1024 * 1024), 25 * 1024 * 1024);
+  const size = Math.min(
+    Math.max(Number(requestedSize) || BANDWIDTH_SIZE, 1 * 1024 * 1024),
+    BANDWIDTH_SIZE
+  );
 
   res.writeHead(200, {
     "Content-Type": "application/octet-stream",
     "Content-Length": size,
     "Cache-Control": "no-store, no-cache, must-revalidate",
+    "Pragma": "no-cache",
     "X-Content-Type-Options": "nosniff",
   });
 
-  let sent = 0;
-  function write() {
-    while (sent < size) {
-      const chunk = CHUNK.subarray(0, Math.min(CHUNK.length, size - sent));
-      sent += chunk.length;
-      if (!res.write(chunk)) {
-        res.once("drain", write);
-        return;
-      }
-    }
-    res.end();
-  }
-  write();
+  res.end(size === BANDWIDTH_SIZE ? DOWNLOAD_BUFFER : DOWNLOAD_BUFFER.subarray(0, size));
 }
 
 function upload(req, res) {
-  let bytes = 0;
-  req.on("data", chunk => { bytes += chunk.length; });
+  req.resume();
   req.on("end", () => send(res, 204, ""));
   req.on("error", () => res.destroy());
 }
