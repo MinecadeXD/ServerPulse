@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="description" content="Simple latency and bandwidth testing for your current server.">
+  <title>ServerPulse</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="background"></div>
+  <main class="app">
+    <header class="header">
+      <a class="brand" href="/" aria-label="ServerPulse home">
+        <span class="brand-mark">◉</span>
+        <span>ServerPulse</span>
+      </a>
+      <span class="server-status"><span></span> Server online</span>
+    </header>
+
+    <section class="hero">
+      <p class="eyebrow">NETWORK PERFORMANCE</p>
+      <h1>Test your connection<br><span>to this server.</span></h1>
+      <p class="subtitle">A simple, privacy-friendly way to measure latency and bandwidth from your device to the server hosting this site.</p>
+    </section>
+
+    <nav class="tabs" aria-label="Test type">
+      <button class="tab active" data-test="latency">Latency</button>
+      <button class="tab" data-test="bandwidth">Bandwidth</button>
+    </nav>
+
+    <section id="latency-panel" class="panel">
+      <div class="metric-card">
+        <div class="metric-label">AVERAGE LATENCY</div>
+        <div class="metric"><span id="latency-value">—</span><small>ms</small></div>
+        <div id="latency-status" class="status neutral">Ready to test</div>
+        <div class="progress"><span id="latency-progress"></span></div>
+        <div class="progress-label"><span id="latency-progress-text">20 tests</span><span id="latency-percent">0%</span></div>
+      </div>
+
+      <div class="stats">
+        <div><span>Minimum</span><strong id="latency-min">—</strong></div>
+        <div><span>Maximum</span><strong id="latency-max">—</strong></div>
+        <div><span>Jitter</span><strong id="latency-jitter">—</strong></div>
+        <div><span>Packet loss</span><strong id="latency-loss">—</strong></div>
+      </div>
+
+      <div class="results-card">
+        <div class="card-heading"><span>Test results</span><span id="latency-count">0 / 20</span></div>
+        <div id="ping-results" class="ping-results"></div>
+      </div>
+
+      <button id="latency-button" class="primary-button">Start latency test</button>
+    </section>
+
+    <section id="bandwidth-panel" class="panel hidden">
+      <div class="speed-grid">
+        <div class="speed-card">
+          <div class="speed-icon">↓</div>
+          <span>DOWNLOAD</span>
+          <strong id="download-value">—</strong>
+          <small>Mbps</small>
+        </div>
+        <div class="speed-card">
+          <div class="speed-icon">↑</div>
+          <span>UPLOAD</span>
+          <strong id="upload-value">—</strong>
+          <small>Mbps</small>
+        </div>
+      </div>
+
+      <div class="bandwidth-info">
+        <span id="bandwidth-status">Ready to test</span>
+        <span id="bandwidth-size">10 MB test</span>
+      </div>
+      <div class="progress"><span id="bandwidth-progress"></span></div>
+
+      <button id="bandwidth-button" class="primary-button">Start bandwidth test</button>
+      <p class="notice">Bandwidth testing transfers test data. On a mobile connection, this can use your data allowance.</p>
+    </section>
+
+    <footer>
+      <span>ServerPulse</span>
+      <span>Measures your connection to the current host</span>
+    </footer>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
