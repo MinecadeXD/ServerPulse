@@ -12,7 +12,7 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; min-height: 100vh; background: #090b10; }
-button { font: inherit; }
+button, input { font: inherit; }
 
 .background {
   position: fixed;
@@ -68,12 +68,12 @@ h1 span { color:#858da0; }
 .subtitle { color:var(--muted); max-width:600px; margin:20px auto 0; line-height:1.65; font-size:14px; }
 
 .tabs { display:flex; padding:5px; margin-bottom:14px; background:rgba(255,255,255,.045); border:1px solid var(--border); border-radius:14px; }
-.tab { flex:1; border:0; border-radius:10px; padding:12px; background:transparent; color:#8e96a8; cursor:pointer; font-weight:650; transition:.2s; }
+.tab { flex:1; border:0; border-radius:10px; padding:12px 8px; background:transparent; color:#8e96a8; cursor:pointer; font-weight:650; transition:.2s; }
 .tab.active { color:#fff; background:rgba(255,255,255,.09); box-shadow:0 3px 12px rgba(0,0,0,.18); }
 
 .panel { animation:appear .3s ease; }
 .hidden { display:none; }
-.metric-card, .results-card, .speed-card, .stats { border:1px solid var(--border); background:var(--panel); backdrop-filter:blur(16px); }
+.metric-card, .results-card, .speed-card, .stats, .leaderboard-card { border:1px solid var(--border); background:var(--panel); backdrop-filter:blur(16px); }
 .metric-card { border-radius:20px; padding:32px 24px 22px; text-align:center; }
 .metric-label { color:#777f91; font-size:11px; font-weight:800; letter-spacing:.12em; }
 .metric { margin:9px 0 3px; font-size:74px; line-height:1; font-weight:750; letter-spacing:-.06em; }
@@ -105,6 +105,9 @@ h1 span { color:#858da0; }
 .primary-button:hover { transform:translateY(-1px); background:#fff; }
 .primary-button:disabled { opacity:.55; cursor:wait; transform:none; }
 
+.secondary-button { border:1px solid var(--border); border-radius:11px; padding:10px 13px; background:rgba(255,255,255,.045); color:#dce0e8; font-weight:700; cursor:pointer; }
+.secondary-button:hover { background:rgba(255,255,255,.08); }
+
 .speed-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .speed-card { border-radius:20px; padding:30px 24px; }
 .speed-icon { color:var(--accent-2); font-size:25px; margin-bottom:26px; }
@@ -113,9 +116,84 @@ h1 span { color:#858da0; }
 .speed-card small { color:#858da0; margin-left:6px; }
 .bandwidth-info { display:flex; justify-content:space-between; margin:14px 2px 0; color:#858da0; font-size:12px; }
 
+.results-header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:10px; }
+.results-header h2 { margin:5px 0 4px; font-size:28px; letter-spacing:-.04em; }
+.results-header p { margin:0; color:#737b8c; font-size:12px; line-height:1.5; }
+.results-message { min-height:18px; margin:0 2px 8px; color:#858da0; font-size:12px; }
+.results-message.error { color:#ff7777; }
+
+.leaderboard-card { border-radius:16px; overflow:hidden; }
+.leaderboard-heading, .leaderboard-row {
+  display:grid;
+  grid-template-columns:58px minmax(120px, 1.5fr) minmax(72px, 1fr) minmax(110px, 1.2fr) 68px;
+  gap:8px;
+  align-items:center;
+}
+.leaderboard-heading {
+  padding:13px 14px;
+  color:#697184;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  border-bottom:1px solid var(--border);
+}
+.leaderboard-row {
+  padding:13px 14px;
+  color:#cfd4df;
+  font-size:12px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.leaderboard-row:last-child { border-bottom:0; }
+.leaderboard-row.me { background:rgba(124,108,255,.08); }
+.rank { color:#858da0; font-weight:800; }
+.username-cell { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.metric-cell { color:#dce0e8; }
+.metric-cell small { color:#697184; }
+.score-cell { font-weight:800; color:#f0f2f6; }
+.untested { color:#697184; }
+
+.score-note { color:#626a7a; font-size:10px; line-height:1.5; text-align:center; margin:12px 14px 0; }
+
 .notice { color:#626a7a; font-size:11px; line-height:1.5; text-align:center; margin:14px 12px; }
 
-footer { display:flex; justify-content:space-between; color:#555d6d; font-size:10px; padding:36px 2px 0; }
+footer { display:flex; justify-content:space-between; gap:12px; color:#555d6d; font-size:10px; padding:36px 2px 0; }
+
+.modal {
+  position:fixed;
+  inset:0;
+  z-index:20;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(3,5,9,.72);
+  backdrop-filter:blur(10px);
+}
+.modal.hidden { display:none; }
+.modal-card {
+  width:min(420px,100%);
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:28px;
+  background:#12151d;
+  box-shadow:0 24px 80px rgba(0,0,0,.45);
+}
+.modal-card h2 { margin:0; font-size:30px; letter-spacing:-.04em; }
+.modal-copy { color:var(--muted); font-size:13px; line-height:1.6; margin:10px 0 22px; }
+.modal-card label { display:block; color:#aeb5c4; font-size:11px; font-weight:700; margin-bottom:7px; }
+.modal-card input {
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:13px 14px;
+  outline:none;
+  background:rgba(255,255,255,.045);
+  color:#fff;
+}
+.modal-card input:focus { border-color:rgba(155,145,255,.7); box-shadow:0 0 0 3px rgba(124,108,255,.12); }
+.form-error { min-height:18px; color:#ff7777; font-size:11px; margin:7px 0 0; }
+.modal-card .primary-button { margin-top:8px; }
 
 @keyframes appear { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:none; } }
 
@@ -130,5 +208,14 @@ footer { display:flex; justify-content:space-between; color:#555d6d; font-size:1
   .ping-results { grid-template-columns:repeat(4,1fr); }
   .speed-grid { grid-template-columns:1fr; }
   .server-location { width:min(100%, 100%); justify-content:center; }
+  .results-header { align-items:stretch; flex-direction:column; }
+  .secondary-button { width:100%; }
+  .leaderboard-heading, .leaderboard-row {
+    grid-template-columns:38px minmax(92px, 1.3fr) minmax(64px, .9fr) minmax(92px, 1fr) 52px;
+    gap:5px;
+  }
+  .leaderboard-heading, .leaderboard-row { padding-left:10px; padding-right:10px; }
+  .leaderboard-heading { font-size:8px; }
+  .leaderboard-row { font-size:11px; }
   footer { gap:8px; flex-direction:column; text-align:center; }
 }
