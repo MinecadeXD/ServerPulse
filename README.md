@@ -9,7 +9,7 @@
 [![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-*A lightweight browser-based network tester that measures the connection from your device to the ServerPulse host, with a public results leaderboard.*
+*A lightweight self-hosted network tester for measuring connections to your server, with a shared results leaderboard for friends and clients.*
 
 </div>
 
@@ -19,7 +19,7 @@
 
 - 📶 **Latency testing** — 40 requests with individual results, median, average, minimum, maximum, jitter, packet loss, and a quality rating.
 - 🚀 **Bandwidth testing** — 2 MB download and upload speed tests.
-- 🏆 **Public Results** — choose a username and view the latest submitted latency and bandwidth results.
+- 🏆 **Shared Results** — friends and clients can test the same ServerPulse server and compare their latest results in one place.
 - 👤 **Anonymous participant ID** — a generated client ID identifies your results without requiring an account or password.
 - ⏱️ **Rate limiting** — latency and bandwidth submissions are independently limited to once every 20 seconds.
 - ✏️ **Username editing** — usernames can be changed once per hour.
@@ -35,7 +35,7 @@
 
 ### 1. Clone the repository
 
-Clone the repository to your local machine or hosting server.
+Clone the repository to your hosting server or deployment environment.
 
 ```bash
 git clone https://github.com/MinecadeXD/ServerPulse.git
@@ -48,15 +48,17 @@ cd ServerPulse
 npm install
 ```
 
-### 3. Configure the port
+### 3. Configure the required port
 
-Create a `.env` file if your hosting environment requires a specific port:
+ServerPulse requires a `PORT` environment variable. Your hosting provider will normally provide the port that the application must use.
+
+For example:
 
 ```env
 PORT=3000
 ```
 
-If `PORT` is not provided, ServerPulse uses port `3000`.
+The value above is only an example. Use the port required by your hosting provider.
 
 ### 4. Start ServerPulse
 
@@ -64,15 +66,25 @@ If `PORT` is not provided, ServerPulse uses port `3000`.
 npm start
 ```
 
-Then open the server address in your browser.
+Open the hosting address provided by your hosting provider.
 
-For local development:
+### 5. Share the ServerPulse address
+
+Give the ServerPulse address to your friends or clients. Everyone can open the same address from their own device, run the latency or bandwidth tests, and view the shared Results leaderboard.
+
+### Local development
+
+For local development only, you can provide your own `PORT` value and access ServerPulse through localhost, for example:
+
+```env
+PORT=3000
+```
+
+Then open:
 
 ```text
 http://localhost:3000
 ```
-
----
 
 ## ⚙️ Configuration
 
@@ -86,17 +98,17 @@ Controls the HTTP port used by the Node.js server.
 PORT=3000
 ```
 
-The value is normally supplied by your hosting provider. If it is not set, the application defaults to `3000`.
+The value is normally supplied by your hosting provider. ServerPulse does not use a fallback port; startup fails if `PORT` is missing or invalid.
 
 ### `.env.example`
 
-The repository includes a template for local configuration:
+The repository includes a sample configuration:
 
 ```env
 PORT=3000
 ```
 
-Copy it to `.env` and adjust the value when needed.
+This is only an example value. Set `PORT` to the port required by your hosting provider.
 
 > **Important:** Never commit your real `.env` file. It is ignored by Git.
 
@@ -104,7 +116,7 @@ Copy it to `.env` and adjust the value when needed.
 
 ## 📊 How It Works
 
-ServerPulse measures the connection between the visitor's browser and the HTTP server currently hosting ServerPulse.
+ServerPulse is deployed on a server you control or have access to. You share its address with friends or clients, and each person measures the connection from their own browser to that same ServerPulse host.
 
 ### Latency
 
@@ -133,6 +145,8 @@ Both tests use a fixed **2 MB** payload. The measured values are submitted indep
 
 ### Results
 
+The Results system is intended for shared testing. One person deploys ServerPulse, shares its address with friends or clients, and everyone can submit results to the same leaderboard.
+
 Participants choose a username and receive a locally generated client ID.
 
 The server stores:
@@ -158,7 +172,7 @@ The Results system is designed to remain simple and lightweight.
 - Latency submissions are limited to once every **20 seconds**.
 - Bandwidth submissions are limited to once every **20 seconds**.
 - Username changes are limited to once every **60 minutes**.
-- The public leaderboard displays up to **100 participants**.
+- The shared Results leaderboard displays up to **100 participants**.
 - Results are loaded when the Results tab is opened.
 - No account, password, email address, or public IP address is required.
 
@@ -216,7 +230,7 @@ ServerPulse can run on any Node.js-compatible hosting service that supports:
 
 ### Important for production hosting
 
-The `data/` directory must be persistent if you want the public Results leaderboard to survive server restarts, redeployments, or application replacements.
+The `data/` directory must be persistent if you want the shared Results leaderboard to survive server restarts, redeployments, or application replacements.
 
 If the hosting provider deletes the SQLite database, the saved Results data will also be lost.
 
