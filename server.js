@@ -441,6 +441,8 @@ const server = http.createServer(async (req, res) => {
 
 detectServerLocation();
 
+process.on("exit", () => db.close());
+
 server.listen(PORT, () => {
   console.log(`ServerPulse running on port ${PORT}`);
 });
