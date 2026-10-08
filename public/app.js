@@ -6,6 +6,23 @@ const tabs = document.querySelectorAll(".tab");
 const latencyPanel = $("latency-panel");
 const bandwidthPanel = $("bandwidth-panel");
 
+async function loadServerLocation() {
+  try {
+    const response = await fetch("/api/server-info", { cache: "no-store" });
+    if (!response.ok) throw new Error("Server info unavailable");
+
+    const data = await response.json();
+    const location = data.location;
+
+    if (!location?.ready) throw new Error("Location unavailable");
+
+    const parts = [location.city, location.region, location.country].filter(Boolean);
+    $("server-location-value").textContent = parts.length ? parts.join(", ") : "Location unavailable";
+  } catch {
+    $("server-location-value").textContent = "Location unavailable";
+  }
+}
+
 tabs.forEach(tab => {
   tab.addEventListener("click", () => {
     tabs.forEach(t => t.classList.remove("active"));
@@ -87,16 +104,11 @@ async function runLatency() {
     $("latency-status").textContent = "Test failed";
     $("latency-status").className = "status poor";
   } else {
-    // The first successful request can include connection/TLS setup overhead.
-    // Exclude it from the summary metrics, while keeping it visible above.
     const measured = results.length > 1 ? results.slice(1) : results;
     const avg = measured.reduce((a, b) => a + b, 0) / measured.length;
     const medianValue = median(measured);
     const min = Math.min(...measured);
     const max = Math.max(...measured);
-
-    // Use the median absolute change between consecutive measurements.
-    // This reduces the influence of isolated latency spikes.
     const changes = measured.slice(1).map((value, i) => Math.abs(value - measured[i]));
     const jitter = changes.length ? median(changes) : 0;
     const [label, cls] = latencyRating(medianValue);
@@ -124,8 +136,6 @@ function uploadWithProgress(data, onProgress) {
 
     xhr.upload.addEventListener("progress", event => {
       if (event.lengthComputable) {
-        // Keep the bar just below 100% until the server confirms the upload
-        // and the final upload speed has been calculated.
         const progress = event.loaded >= event.total
           ? 99
           : 50 + (event.loaded / event.total * 49);
@@ -179,8 +189,6 @@ async function runBandwidth() {
       setProgress("bandwidth-progress", progress);
     });
 
-    // The upload is fully confirmed here, so reveal the speed and complete
-    // the progress bar at the same time.
     $("upload-value").textContent = formatMbps(size, uploadSeconds);
     setProgress("bandwidth-progress", 100);
     $("bandwidth-status").textContent = "Test complete";
@@ -194,5 +202,6 @@ async function runBandwidth() {
   bandwidthButton.textContent = "Test again";
 }
 
+loadServerLocation();
 latencyButton.addEventListener("click", runLatency);
 bandwidthButton.addEventListener("click", runBandwidth);
