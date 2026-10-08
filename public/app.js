@@ -6,11 +6,6 @@ const tabs = document.querySelectorAll(".tab");
 const latencyPanel = $("latency-panel");
 const bandwidthPanel = $("bandwidth-panel");
 
-function countryFlagUrl(countryCode) {
-  if (!countryCode || !/^[A-Z]{2}$/i.test(countryCode)) return "";
-  return "https://flagcdn.com/24x18/" + countryCode.toLowerCase() + ".png";
-}
-
 async function loadServerLocation() {
   try {
     const response = await fetch("/api/server-info", { cache: "no-store" });
@@ -22,7 +17,21 @@ async function loadServerLocation() {
     if (!location?.ready) throw new Error("Location unavailable");
 
     const parts = [location.city, location.region, location.country].filter(Boolean);
-    $("server-location-value").textContent = parts.length ? parts.join(", ") : "Location unavailable";
+    const locationValue = $("server-location-value");
+
+    locationValue.innerHTML = "";
+
+    if (location.flag) {
+      const flag = document.createElement("span");
+      flag.className = "country-flag";
+      flag.setAttribute("aria-hidden", "true");
+      flag.textContent = location.flag;
+      locationValue.appendChild(flag);
+    }
+
+    const text = document.createElement("span");
+    text.textContent = parts.length ? parts.join(", ") : "Location unavailable";
+    locationValue.appendChild(text);
   } catch {
     $("server-location-value").textContent = "Location unavailable";
   }
