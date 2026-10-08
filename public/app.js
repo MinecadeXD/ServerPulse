@@ -6,6 +6,13 @@ const tabs = document.querySelectorAll(".tab");
 const latencyPanel = $("latency-panel");
 const bandwidthPanel = $("bandwidth-panel");
 
+function countryFlag(countryCode) {
+  if (!countryCode || !/^[A-Z]{2}$/i.test(countryCode)) return "";
+  return String.fromCodePoint(
+    ...countryCode.toUpperCase().split("").map(char => 127397 + char.charCodeAt(0))
+  );
+}
+
 async function loadServerLocation() {
   try {
     const response = await fetch("/api/server-info", { cache: "no-store" });
