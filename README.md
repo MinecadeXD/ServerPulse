@@ -5,7 +5,7 @@
 
 # 📡 ServerPulse
 
-**Test latency and bandwidth to the server currently hosting the website**
+**Self-hosted latency and bandwidth testing for your server**
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES2022-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
@@ -318,7 +318,7 @@ Contributions are welcome.
 
 Before opening a pull request:
 
-1. Keep the project focused on latency, bandwidth, and public result testing.
+1. Keep the project focused on latency, bandwidth, and shared result testing.
 2. Avoid adding unnecessary external services or tracking.
 3. Keep the project lightweight and maintainable.
 4. Update the README when user-facing behavior changes.
