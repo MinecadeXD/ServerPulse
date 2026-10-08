@@ -6,11 +6,9 @@ const tabs = document.querySelectorAll(".tab");
 const latencyPanel = $("latency-panel");
 const bandwidthPanel = $("bandwidth-panel");
 
-function countryFlag(countryCode) {
+function countryFlagUrl(countryCode) {
   if (!countryCode || !/^[A-Z]{2}$/i.test(countryCode)) return "";
-  return String.fromCodePoint(
-    ...countryCode.toUpperCase().split("").map(char => 127397 + char.charCodeAt(0))
-  );
+  return "https://flagcdn.com/24x18/" + countryCode.toLowerCase() + ".png";
 }
 
 async function loadServerLocation() {
