@@ -32,11 +32,12 @@
 
     <section id="latency-panel" class="panel">
       <div class="metric-card">
-        <div class="metric-label">AVERAGE LATENCY</div>
+        <div class="metric-label">MEDIAN LATENCY</div>
         <div class="metric"><span id="latency-value">—</span><small>ms</small></div>
+        <div class="secondary-metric">Average latency <strong id="latency-average">—</strong></div>
         <div id="latency-status" class="status neutral">Ready to test</div>
         <div class="progress"><span id="latency-progress"></span></div>
-        <div class="progress-label"><span id="latency-progress-text">20 tests</span><span id="latency-percent">0%</span></div>
+        <div class="progress-label"><span id="latency-progress-text">40 tests</span><span id="latency-percent">0%</span></div>
       </div>
 
       <div class="stats">
@@ -47,7 +48,7 @@
       </div>
 
       <div class="results-card">
-        <div class="card-heading"><span>Test results</span><span id="latency-count">0 / 20</span></div>
+        <div class="card-heading"><span>Test results</span><span id="latency-count">0 / 40</span></div>
         <div id="ping-results" class="ping-results"></div>
       </div>
 
