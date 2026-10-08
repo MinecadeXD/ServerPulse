@@ -4,6 +4,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { URL } = require("url");
+const { countryCodeEmoji } = require("country-code-emoji");
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC = path.join(__dirname, "public");
@@ -16,6 +17,7 @@ let serverLocation = {
   region: null,
   country: null,
   countryCode: null,
+  flag: null,
 };
 
 async function detectServerLocation() {
@@ -26,16 +28,19 @@ async function detectServerLocation() {
     const data = await response.json();
     if (!data.success) throw new Error(data.message || "Location lookup failed");
 
+    const countryCode = data.country_code || null;
+
     serverLocation = {
       ready: true,
       city: data.city || null,
       region: data.region || null,
       country: data.country || null,
-      countryCode: data.country_code || null,
+      countryCode,
+      flag: countryCode ? countryCodeEmoji(countryCode) : null,
     };
 
     console.log(
-      `Server location detected: ${serverLocation.city || "Unknown"}, ${serverLocation.country || "Unknown"}`
+      `Server location detected: ${serverLocation.city || "Unknown"}, ${serverLocation.country || "Unknown"} ${serverLocation.flag || ""}`
     );
   } catch (error) {
     console.error("Server location detection failed:", error.message);
