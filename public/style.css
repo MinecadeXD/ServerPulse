@@ -58,7 +58,7 @@ h1 span { color:#858da0; }
 .progress span { display:block; width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg, var(--accent), var(--accent-2)); transition:width .15s; }
 .progress-label { display:flex; justify-content:space-between; color:#697184; font-size:11px; margin-top:8px; }
 
-.stats { display:grid; grid-template-columns:repeat(4,1fr); margin-top:10px; border-radius:16px; overflow:hidden; }
+.stats { display:grid; grid-template-columns:repeat(5,1fr); margin-top:10px; border-radius:16px; overflow:hidden; }
 .stats div { padding:16px; border-right:1px solid var(--border); }
 .stats div:last-child { border-right:0; }
 .stats span { display:block; color:#737b8c; font-size:11px; margin-bottom:6px; }
@@ -94,9 +94,9 @@ footer { display:flex; justify-content:space-between; color:#555d6d; font-size:1
   .hero { padding:58px 8px 28px; }
   .subtitle { font-size:13px; }
   .metric { font-size:64px; }
-  .stats { grid-template-columns:1fr 1fr; }
-  .stats div:nth-child(2) { border-right:0; }
-  .stats div:nth-child(-n+2) { border-bottom:1px solid var(--border); }
+  .stats { grid-template-columns:repeat(2,1fr); }
+  .stats div:nth-child(3) { border-right:0; }
+  .stats div:nth-child(-n+3) { border-bottom:1px solid var(--border); }
   .ping-results { grid-template-columns:repeat(4,1fr); }
   .speed-grid { grid-template-columns:1fr; }
   footer { gap:8px; flex-direction:column; text-align:center; }
