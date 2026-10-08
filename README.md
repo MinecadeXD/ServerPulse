@@ -331,6 +331,4 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for the f
 
 ### Made with ♥️ by [Mincade](https://github.com/MinecadeXD)
 
-**ServerPulse — measure your connection to the server hosting it.**
-
 </div>
