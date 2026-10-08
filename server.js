@@ -7,7 +7,19 @@ const { URL } = require("url");
 const Database = require("better-sqlite3");
 const { countryCodeEmoji } = require("country-code-emoji");
 
-const PORT = Number(process.env.PORT) || 3000;
+const rawPort = process.env.PORT;
+
+if (!rawPort || !/^\d+$/.test(rawPort)) {
+  console.error("ServerPulse requires a valid PORT environment variable.");
+  process.exit(1);
+}
+
+const PORT = Number(rawPort);
+
+if (PORT < 1 || PORT > 65535) {
+  console.error("ServerPulse requires PORT to be between 1 and 65535.");
+  process.exit(1);
+}
 const PUBLIC = path.join(__dirname, "public");
 const DATA = path.join(__dirname, "data");
 const DATABASE_FILE = path.join(DATA, "serverpulse.db");
