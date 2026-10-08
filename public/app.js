@@ -124,7 +124,12 @@ function uploadWithProgress(data, onProgress) {
 
     xhr.upload.addEventListener("progress", event => {
       if (event.lengthComputable) {
-        onProgress(event.loaded, event.total);
+        // Keep the bar just below 100% until the server confirms the upload
+        // and the final upload speed has been calculated.
+        const progress = event.loaded >= event.total
+          ? 99
+          : 50 + (event.loaded / event.total * 49);
+        onProgress(progress);
       }
     });
 
@@ -170,10 +175,12 @@ async function runBandwidth() {
 
     $("bandwidth-status").textContent = "Testing upload…";
     const uploadData = new Uint8Array(size);
-    const uploadSeconds = await uploadWithProgress(uploadData, (loaded, total) => {
-      setProgress("bandwidth-progress", 50 + (loaded / total * 50));
+    const uploadSeconds = await uploadWithProgress(uploadData, progress => {
+      setProgress("bandwidth-progress", progress);
     });
 
+    // The upload is fully confirmed here, so reveal the speed and complete
+    // the progress bar at the same time.
     $("upload-value").textContent = formatMbps(size, uploadSeconds);
     setProgress("bandwidth-progress", 100);
     $("bandwidth-status").textContent = "Test complete";
