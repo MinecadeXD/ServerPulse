@@ -1,5 +1,8 @@
 <div align="center">
 
+<img width="1280" height="640" alt="ServerPulse Banner" src="https://github.com/user-attachments/assets/20cc3ad7-eec8-48ff-98a2-0d6b484c2750" />
+
+
 # 📡 ServerPulse
 
 **Test latency and bandwidth to the server currently hosting the website**
