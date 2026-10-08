@@ -1,7 +1,7 @@
 {
   "name": "serverpulse",
   "version": "1.0.0",
-  "description": "A simple latency and bandwidth tester for the current hosting server.",
+  "description": "Self-hosted latency and bandwidth tester with shared results for friends and clients.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
