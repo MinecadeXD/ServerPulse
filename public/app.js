@@ -5,6 +5,160 @@ const bandwidthButton = $("bandwidth-button");
 const tabs = document.querySelectorAll(".tab");
 const latencyPanel = $("latency-panel");
 const bandwidthPanel = $("bandwidth-panel");
+const resultsPanel = $("results-panel");
+
+const USERNAME_KEY = "serverpulse_username";
+const CLIENT_ID_KEY = "serverpulse_client_id";
+const COOLDOWN_MS = 20 * 1000;
+
+let clientId = localStorage.getItem(CLIENT_ID_KEY);
+let currentUsername = localStorage.getItem(USERNAME_KEY) || "";
+let latencyCooldownUntil = 0;
+let bandwidthCooldownUntil = 0;
+let cooldownTimer = null;
+
+if (!clientId || !/^[0-9a-f]{32,64}$/i.test(clientId)) {
+  clientId = crypto.randomUUID().replace(/-/g, "");
+  localStorage.setItem(CLIENT_ID_KEY, clientId);
+}
+
+function showUsernameModal(edit = false) {
+  const modal = $("username-modal");
+  const input = $("username-input");
+  $("username-title").textContent = edit ? "Edit your username" : "Choose your username";
+  $("username-error").textContent = "";
+  input.value = currentUsername;
+  modal.classList.remove("hidden");
+  setTimeout(() => input.focus(), 0);
+}
+
+function hideUsernameModal() {
+  $("username-modal").classList.add("hidden");
+}
+
+async function registerUsername(username) {
+  const response = await fetch("/api/results/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+    body: JSON.stringify({ clientId, username }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const error = new Error(data.error || "Unable to save username.");
+    error.retryAfter = data.retryAfter;
+    throw error;
+  }
+
+  currentUsername = data.username;
+  localStorage.setItem(USERNAME_KEY, currentUsername);
+  return data;
+}
+
+async function initializeUsername() {
+  if (!currentUsername) {
+    showUsernameModal(false);
+    return;
+  }
+
+  try {
+    await registerUsername(currentUsername);
+  } catch (error) {
+    if (error.message === "That username is already taken.") {
+      showUsernameModal(false);
+    }
+  }
+}
+
+$("username-form").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const input = $("username-input");
+  const username = input.value.trim();
+  const errorElement = $("username-error");
+  errorElement.textContent = "";
+
+  try {
+    await registerUsername(username);
+    hideUsernameModal();
+    await loadResults();
+  } catch (error) {
+    errorElement.textContent = error.retryAfter
+      ? `${error.message} Try again in ${formatDuration(error.retryAfter)}.`
+      : error.message;
+  }
+});
+
+$("edit-username-button").addEventListener("click", () => showUsernameModal(true));
+
+function formatDuration(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remaining = seconds % 60;
+  if (minutes) return `${minutes}m ${remaining}s`;
+  return `${remaining}s`;
+}
+
+function setCooldown(type, seconds) {
+  const until = Date.now() + seconds * 1000;
+  if (type === "latency") {
+    latencyCooldownUntil = until;
+  } else {
+    bandwidthCooldownUntil = until;
+  }
+
+  updateCooldownButtons();
+
+  clearInterval(cooldownTimer);
+  cooldownTimer = setInterval(() => {
+    updateCooldownButtons();
+
+    if (Date.now() >= latencyCooldownUntil && Date.now() >= bandwidthCooldownUntil) {
+      clearInterval(cooldownTimer);
+      cooldownTimer = null;
+    }
+  }, 250);
+}
+
+function updateCooldownButtons() {
+  const latencyRemaining = Math.max(0, Math.ceil((latencyCooldownUntil - Date.now()) / 1000));
+  const bandwidthRemaining = Math.max(0, Math.ceil((bandwidthCooldownUntil - Date.now()) / 1000));
+
+  if (!latencyButton.dataset.testing) {
+    latencyButton.disabled = latencyRemaining > 0;
+    latencyButton.textContent = latencyRemaining ? `Available in ${latencyRemaining}s` : "Test again";
+  }
+
+  if (!bandwidthButton.dataset.testing) {
+    bandwidthButton.disabled = bandwidthRemaining > 0;
+    bandwidthButton.textContent = bandwidthRemaining ? `Available in ${bandwidthRemaining}s` : "Test again";
+  }
+}
+
+async function submitResult(path, payload) {
+  if (!currentUsername) {
+    showUsernameModal(false);
+    throw new Error("Choose a username before testing.");
+  }
+
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+    body: JSON.stringify({ clientId, ...payload }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const error = new Error(data.error || "Unable to save result.");
+    error.retryAfter = data.retryAfter;
+    throw error;
+  }
+
+  return data;
+}
 
 async function loadServerLocation() {
   try {
@@ -41,9 +195,13 @@ tabs.forEach(tab => {
   tab.addEventListener("click", () => {
     tabs.forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
-    const latency = tab.dataset.test === "latency";
-    latencyPanel.classList.toggle("hidden", !latency);
-    bandwidthPanel.classList.toggle("hidden", latency);
+
+    const test = tab.dataset.test;
+    latencyPanel.classList.toggle("hidden", test !== "latency");
+    bandwidthPanel.classList.toggle("hidden", test !== "bandwidth");
+    resultsPanel.classList.toggle("hidden", test !== "results");
+
+    if (test === "results") loadResults();
   });
 });
 
@@ -71,6 +229,7 @@ function latencyRating(value) {
 }
 
 async function runLatency() {
+  latencyButton.dataset.testing = "true";
   latencyButton.disabled = true;
   latencyButton.textContent = "Testing…";
   $("ping-results").innerHTML = "";
@@ -114,13 +273,15 @@ async function runLatency() {
   const loss = ((total - results.length) / total) * 100;
   $("latency-loss").textContent = `${loss.toFixed(0)}%`;
 
+  let medianValue = null;
+
   if (!results.length) {
     $("latency-status").textContent = "Test failed";
     $("latency-status").className = "status poor";
   } else {
     const measured = results.length > 1 ? results.slice(1) : results;
     const avg = measured.reduce((a, b) => a + b, 0) / measured.length;
-    const medianValue = median(measured);
+    medianValue = median(measured);
     const min = Math.min(...measured);
     const max = Math.max(...measured);
     const changes = measured.slice(1).map((value, i) => Math.abs(value - measured[i]));
@@ -136,8 +297,22 @@ async function runLatency() {
     $("latency-status").className = `status ${cls}`;
   }
 
-  latencyButton.disabled = false;
-  latencyButton.textContent = "Test again";
+  if (medianValue !== null) {
+    try {
+      await submitResult("/api/results/latency", { latencyMs: medianValue });
+      setCooldown("latency", 20);
+    } catch (error) {
+      $("latency-status").textContent = error.retryAfter
+        ? `Result not saved · retry in ${formatDuration(error.retryAfter)}`
+        : "Test complete · result not saved";
+      $("latency-status").className = "status fair";
+
+      if (error.retryAfter) setCooldown("latency", error.retryAfter);
+    }
+  }
+
+  delete latencyButton.dataset.testing;
+  updateCooldownButtons();
 }
 
 function uploadWithProgress(data, onProgress) {
@@ -172,6 +347,7 @@ function uploadWithProgress(data, onProgress) {
 }
 
 async function runBandwidth() {
+  bandwidthButton.dataset.testing = "true";
   bandwidthButton.disabled = true;
   bandwidthButton.textContent = "Testing…";
   $("download-value").textContent = "—";
@@ -180,6 +356,8 @@ async function runBandwidth() {
   setProgress("bandwidth-progress", 0);
 
   const size = 2 * 1024 * 1024;
+  let downloadMbps = null;
+  let uploadMbps = null;
 
   try {
     const start = performance.now();
@@ -195,7 +373,8 @@ async function runBandwidth() {
       setProgress("bandwidth-progress", received / size * 50);
     }
     const seconds = (performance.now() - start) / 1000;
-    $("download-value").textContent = formatMbps(received, seconds);
+    downloadMbps = Number(formatMbps(received, seconds));
+    $("download-value").textContent = downloadMbps.toFixed(1);
 
     $("bandwidth-status").textContent = "Testing upload…";
     const uploadData = new Uint8Array(size);
@@ -203,7 +382,9 @@ async function runBandwidth() {
       setProgress("bandwidth-progress", progress);
     });
 
-    $("upload-value").textContent = formatMbps(size, uploadSeconds);
+    uploadMbps = Number(formatMbps(size, uploadSeconds));
+    $("upload-value").textContent = uploadMbps.toFixed(1);
+
     setProgress("bandwidth-progress", 100);
     $("bandwidth-status").textContent = "Test complete";
   } catch (error) {
@@ -212,10 +393,91 @@ async function runBandwidth() {
     setProgress("bandwidth-progress", 0);
   }
 
-  bandwidthButton.disabled = false;
-  bandwidthButton.textContent = "Test again";
+  if (downloadMbps !== null && uploadMbps !== null) {
+    try {
+      await submitResult("/api/results/bandwidth", {
+        downloadMbps,
+        uploadMbps,
+      });
+      setCooldown("bandwidth", 20);
+    } catch (error) {
+      $("bandwidth-status").textContent = error.retryAfter
+        ? `Test complete · result not saved · retry in ${formatDuration(error.retryAfter)}`
+        : "Test complete · result not saved";
+
+      if (error.retryAfter) setCooldown("bandwidth", error.retryAfter);
+    }
+  }
+
+  delete bandwidthButton.dataset.testing;
+  updateCooldownButtons();
+}
+
+function renderResults(rows) {
+  const leaderboard = $("leaderboard");
+  leaderboard.innerHTML = "";
+
+  if (!rows.length) {
+    leaderboard.innerHTML = '<div class="results-message">No users yet. Be the first to enter your username.</div>';
+    return;
+  }
+
+  rows.forEach(row => {
+    const item = document.createElement("div");
+    item.className = `leaderboard-row${row.username === currentUsername ? " me" : ""}`;
+
+    const latency = row.latencyMs === null
+      ? '<span class="untested">Not tested</span>'
+      : `${row.latencyMs} <small>ms</small>`;
+
+    const bandwidth = row.bandwidthMbps === null
+      ? '<span class="untested">Not tested</span>'
+      : `${row.bandwidthMbps} <small>Mbps</small>`;
+
+    const score = row.score === null
+      ? '<span class="untested">—</span>'
+      : `${row.score}`;
+
+    item.innerHTML = `
+      <span class="rank">#${row.rank}</span>
+      <span class="username-cell" title="${escapeHtml(row.username)}">${escapeHtml(row.username)}</span>
+      <span class="metric-cell">${latency}</span>
+      <span class="metric-cell">${bandwidth}</span>
+      <span class="score-cell">${score}</span>
+    `;
+
+    leaderboard.appendChild(item);
+  });
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+async function loadResults() {
+  $("results-message").textContent = "Loading latest results…";
+  $("results-message").className = "results-message";
+
+  try {
+    const response = await fetch("/api/results", { cache: "no-store" });
+    const data = await response.json();
+
+    if (!response.ok) throw new Error(data.error || "Unable to load results.");
+
+    renderResults(data.results || []);
+    $("results-message").textContent = `Showing the latest results from ${data.results.length} participant${data.results.length === 1 ? "" : "s"}.`;
+  } catch (error) {
+    $("results-message").textContent = error.message;
+    $("results-message").className = "results-message error";
+  }
 }
 
 loadServerLocation();
+initializeUsername();
 latencyButton.addEventListener("click", runLatency);
 bandwidthButton.addEventListener("click", runBandwidth);
