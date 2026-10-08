@@ -17,8 +17,25 @@ let latencyCooldownUntil = 0;
 let bandwidthCooldownUntil = 0;
 let cooldownTimer = null;
 
+function createClientId() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID().replace(/-/g, "");
+  }
+
+  const bytes = new Uint8Array(32);
+  if (globalThis.crypto?.getRandomValues) {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i++) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+  }
+
+  return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
 if (!clientId || !/^[0-9a-f]{32,64}$/i.test(clientId)) {
-  clientId = crypto.randomUUID().replace(/-/g, "");
+  clientId = createClientId();
   localStorage.setItem(CLIENT_ID_KEY, clientId);
 }
 
