@@ -31,6 +31,22 @@ button { font: inherit; }
 .server-status { color:#9da5b5; font-size:12px; display:flex; align-items:center; gap:7px; }
 .server-status span { width:7px; height:7px; border-radius:50%; background:#54d48a; box-shadow:0 0 12px rgba(84,212,138,.7); }
 
+.server-location {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  width:fit-content;
+  margin:14px auto 0;
+  padding:8px 13px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:rgba(255,255,255,.035);
+}
+.location-icon { color:var(--accent-2); font-size:18px; line-height:1; }
+.server-location small { display:block; color:#697184; font-size:9px; font-weight:800; letter-spacing:.12em; }
+.server-location strong { display:block; color:#dce0e8; font-size:12px; font-weight:650; margin-top:2px; }
+
 .hero { text-align:center; padding:72px 16px 36px; }
 .eyebrow { color:var(--accent-2); font-size:11px; font-weight:800; letter-spacing:.16em; margin:0 0 14px; }
 h1 { font-size:clamp(34px, 7vw, 54px); line-height:1.03; letter-spacing:-.045em; margin:0; }
