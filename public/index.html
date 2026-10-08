@@ -10,6 +10,21 @@
 </head>
 <body>
   <div class="background"></div>
+
+  <div id="username-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="username-title">
+    <div class="modal-card">
+      <p class="eyebrow">WELCOME TO SERVERPULSE</p>
+      <h2 id="username-title">Choose your username</h2>
+      <p class="modal-copy">Your name is used for the public Results leaderboard. No account or password is required.</p>
+      <form id="username-form">
+        <label for="username-input">Username</label>
+        <input id="username-input" name="username" type="text" maxlength="20" autocomplete="nickname" placeholder="Enter username" required>
+        <p id="username-error" class="form-error" aria-live="polite"></p>
+        <button class="primary-button" type="submit">Continue</button>
+      </form>
+    </div>
+  </div>
+
   <main class="app">
     <header class="header">
       <a class="brand" href="/" aria-label="ServerPulse home">
@@ -33,6 +48,7 @@
     <nav class="tabs" aria-label="Test type">
       <button class="tab active" data-test="latency">Latency</button>
       <button class="tab" data-test="bandwidth">Bandwidth</button>
+      <button class="tab" data-test="results">Results</button>
     </nav>
 
     <section id="latency-panel" class="panel">
@@ -86,9 +102,36 @@
       <p class="notice">Bandwidth testing transfers test data. On a mobile connection, this can use your data allowance.</p>
     </section>
 
+    <section id="results-panel" class="panel hidden">
+      <div class="results-header">
+        <div>
+          <div class="metric-label">PUBLIC LEADERBOARD</div>
+          <h2>Results</h2>
+          <p id="results-summary">Latest available results from ServerPulse users.</p>
+        </div>
+        <button id="edit-username-button" class="secondary-button">Edit username</button>
+      </div>
+
+      <div id="results-message" class="results-message" aria-live="polite"></div>
+
+      <div class="leaderboard-card">
+        <div class="leaderboard-heading">
+          <span>Rank</span>
+          <span>User</span>
+          <span>Latency</span>
+          <span>Bandwidth</span>
+          <span>Score</span>
+        </div>
+        <div id="leaderboard" class="leaderboard"></div>
+      </div>
+
+      <p class="score-note">Score: latency is scored from 0–200 ms, while average download/upload bandwidth is scored up to 100 Mbps. If only one test type is available, only that metric is used.</p>
+    </section>
+
     <footer>
       <span>ServerPulse</span>
       <span>Measures your connection to the current host</span>
+      <span>Made by Mincade</span>
     </footer>
   </main>
   <script src="/app.js"></script>
