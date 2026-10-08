@@ -117,3 +117,13 @@ footer { display:flex; justify-content:space-between; color:#555d6d; font-size:1
   .speed-grid { grid-template-columns:1fr; }
   footer { gap:8px; flex-direction:column; text-align:center; }
 }
+
+.country-flag {
+  width: 24px;
+  height: 18px;
+  object-fit: cover;
+  border-radius: 2px;
+  margin-right: 7px;
+  vertical-align: -4px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08);
+}
