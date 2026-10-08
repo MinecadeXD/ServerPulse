@@ -24,10 +24,18 @@ function formatMbps(bytes, seconds) {
   return (bytes * 8 / seconds / 1_000_000).toFixed(1);
 }
 
-function latencyRating(avg) {
-  if (avg <= 50) return ["Excellent", "good"];
-  if (avg <= 100) return ["Good", "good"];
-  if (avg <= 180) return ["Fair", "fair"];
+function median(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function latencyRating(value) {
+  if (value <= 50) return ["Excellent", "good"];
+  if (value <= 100) return ["Good", "good"];
+  if (value <= 180) return ["Fair", "fair"];
   return ["Poor", "poor"];
 }
 
@@ -36,13 +44,14 @@ async function runLatency() {
   latencyButton.textContent = "Testing…";
   $("ping-results").innerHTML = "";
   $("latency-value").textContent = "—";
+  $("latency-average").textContent = "—";
   ["latency-min", "latency-max", "latency-jitter"].forEach(id => $(id).textContent = "—");
   $("latency-loss").textContent = "0%";
   $("latency-status").textContent = "Testing connection…";
   $("latency-status").className = "status neutral";
 
   const results = [];
-  const total = 20;
+  const total = 40;
 
   for (let i = 0; i < total; i++) {
     const item = document.createElement("div");
@@ -78,15 +87,22 @@ async function runLatency() {
     $("latency-status").textContent = "Test failed";
     $("latency-status").className = "status poor";
   } else {
-    const avg = results.reduce((a, b) => a + b, 0) / results.length;
-    const min = Math.min(...results);
-    const max = Math.max(...results);
-    const jitter = results.length > 1
-      ? results.slice(1).reduce((sum, value, i) => sum + Math.abs(value - results[i]), 0) / (results.length - 1)
-      : 0;
-    const [label, cls] = latencyRating(avg);
+    // The first successful request can include connection/TLS setup overhead.
+    // Exclude it from the summary metrics, while keeping it visible above.
+    const measured = results.length > 1 ? results.slice(1) : results;
+    const avg = measured.reduce((a, b) => a + b, 0) / measured.length;
+    const medianValue = median(measured);
+    const min = Math.min(...measured);
+    const max = Math.max(...measured);
 
-    $("latency-value").textContent = Math.round(avg);
+    // Use the median absolute change between consecutive measurements.
+    // This reduces the influence of isolated latency spikes.
+    const changes = measured.slice(1).map((value, i) => Math.abs(value - measured[i]));
+    const jitter = changes.length ? median(changes) : 0;
+    const [label, cls] = latencyRating(medianValue);
+
+    $("latency-value").textContent = Math.round(medianValue);
+    $("latency-average").textContent = `${Math.round(avg)} ms`;
     $("latency-min").textContent = `${Math.round(min)} ms`;
     $("latency-max").textContent = `${Math.round(max)} ms`;
     $("latency-jitter").textContent = `${Math.round(jitter)} ms`;
