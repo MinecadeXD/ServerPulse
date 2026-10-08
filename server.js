@@ -10,6 +10,38 @@ const PUBLIC = path.join(__dirname, "public");
 const BANDWIDTH_SIZE = 2 * 1024 * 1024;
 const DOWNLOAD_BUFFER = Buffer.alloc(BANDWIDTH_SIZE, 0);
 
+let serverLocation = {
+  ready: false,
+  city: null,
+  region: null,
+  country: null,
+  countryCode: null,
+};
+
+async function detectServerLocation() {
+  try {
+    const response = await fetch("https://ipwho.is/");
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    if (!data.success) throw new Error(data.message || "Location lookup failed");
+
+    serverLocation = {
+      ready: true,
+      city: data.city || null,
+      region: data.region || null,
+      country: data.country || null,
+      countryCode: data.country_code || null,
+    };
+
+    console.log(
+      `Server location detected: ${serverLocation.city || "Unknown"}, ${serverLocation.country || "Unknown"}`
+    );
+  } catch (error) {
+    console.error("Server location detection failed:", error.message);
+  }
+}
+
 function send(res, status, body, type = "application/json") {
   res.writeHead(status, {
     "Content-Type": type,
@@ -57,6 +89,10 @@ const server = http.createServer((req, res) => {
   if (req.method === "GET" && url.pathname === "/api/download") return download(res, url.searchParams.get("size"));
   if (req.method === "POST" && url.pathname === "/api/upload") return upload(req, res);
 
+  if (req.method === "GET" && url.pathname === "/api/server-info") {
+    return send(res, 200, JSON.stringify({ location: serverLocation }));
+  }
+
   if (req.method === "GET") {
     const requested = url.pathname === "/" ? "/index.html" : url.pathname;
     const filePath = path.normalize(path.join(PUBLIC, requested));
@@ -81,6 +117,8 @@ const server = http.createServer((req, res) => {
 
   send(res, 405, JSON.stringify({ error: "Method not allowed" }));
 });
+
+detectServerLocation();
 
 server.listen(PORT, () => {
   console.log(`ServerPulse running on port ${PORT}`);
