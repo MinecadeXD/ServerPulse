@@ -7,7 +7,7 @@
 
 **Self-hosted latency and bandwidth testing for your server**
 
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-22%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES2022-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -225,7 +225,7 @@ No visitor IP address is stored in the ServerPulse database.
 
 ServerPulse can run on any Node.js-compatible hosting service that supports:
 
-- Node.js 18 or newer
+- Node.js 22 or newer
 - `npm install`
 - `npm start`
 - A writable filesystem for SQLite
