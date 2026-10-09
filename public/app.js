@@ -282,14 +282,17 @@ function filterLatencyOutliers(values) {
   const iqr = q3 - q1;
 
   if (!Number.isFinite(iqr) || iqr === 0) {
-    return sorted.filter(value => value === median(sorted));
+    const center = median(sorted);
+    const filtered = values.filter(value => value === center);
+    return filtered.length >= 3 ? filtered : [...values];
   }
 
   const lowerBound = q1 - 1.5 * iqr;
   const upperBound = q3 + 1.5 * iqr;
-  const filtered = sorted.filter(value => value >= lowerBound && value <= upperBound);
+  const filtered = values.filter(value => value >= lowerBound && value <= upperBound);
 
-  return filtered.length >= 3 ? filtered : sorted;
+  // Preserve sample order so jitter still reflects changes between consecutive tests.
+  return filtered.length >= 3 ? filtered : [...values];
 }
 
 function latencyRating(value) {
