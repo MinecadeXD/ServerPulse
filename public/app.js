@@ -16,6 +16,11 @@ let currentUsername = localStorage.getItem(USERNAME_KEY) || "";
 let latencyCooldownUntil = 0;
 let bandwidthCooldownUntil = 0;
 let cooldownTimer = null;
+let resultsRefreshTimer = null;
+let resultsLoading = false;
+let activeTab = "latency";
+
+const RESULTS_REFRESH_MS = 5000;
 
 function createClientId() {
   if (globalThis.crypto?.randomUUID) {
@@ -208,18 +213,46 @@ async function loadServerLocation() {
   }
 }
 
+function stopResultsRefresh() {
+  if (resultsRefreshTimer !== null) {
+    clearInterval(resultsRefreshTimer);
+    resultsRefreshTimer = null;
+  }
+}
+
+function startResultsRefresh() {
+  stopResultsRefresh();
+  loadResults();
+
+  resultsRefreshTimer = setInterval(() => {
+    if (activeTab === "results" && !document.hidden) {
+      loadResults({ silent: true });
+    }
+  }, RESULTS_REFRESH_MS);
+}
+
 tabs.forEach(tab => {
   tab.addEventListener("click", () => {
     tabs.forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
 
     const test = tab.dataset.test;
+    activeTab = test;
     latencyPanel.classList.toggle("hidden", test !== "latency");
     bandwidthPanel.classList.toggle("hidden", test !== "bandwidth");
     resultsPanel.classList.toggle("hidden", test !== "results");
 
-    if (test === "results") loadResults();
+    if (test === "results") {
+      startResultsRefresh();
+    } else {
+      stopResultsRefresh();
+    }
   });
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) return;
+  if (activeTab === "results") loadResults({ silent: true });
 });
 
 function setProgress(id, percent) {
@@ -232,10 +265,31 @@ function formatMbps(bytes, seconds) {
 
 function median(values) {
   const sorted = [...values].sort((a, b) => a - b);
+  if (!sorted.length) return null;
   const middle = Math.floor(sorted.length / 2);
   return sorted.length % 2
     ? sorted[middle]
     : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function filterLatencyOutliers(values) {
+  if (values.length < 4) return [...values];
+
+  const sorted = [...values].sort((a, b) => a - b);
+  const q1 = median(sorted.slice(0, Math.floor(sorted.length / 2)));
+  const upperHalfStart = Math.ceil(sorted.length / 2);
+  const q3 = median(sorted.slice(upperHalfStart));
+  const iqr = q3 - q1;
+
+  if (!Number.isFinite(iqr) || iqr === 0) {
+    return sorted.filter(value => value === median(sorted));
+  }
+
+  const lowerBound = q1 - 1.5 * iqr;
+  const upperBound = q3 + 1.5 * iqr;
+  const filtered = sorted.filter(value => value >= lowerBound && value <= upperBound);
+
+  return filtered.length >= 3 ? filtered : sorted;
 }
 
 function latencyRating(value) {
@@ -291,30 +345,41 @@ async function runLatency() {
   $("latency-loss").textContent = `${loss.toFixed(0)}%`;
 
   let medianValue = null;
+  let enoughSamples = false;
 
   if (!results.length) {
-    $("latency-status").textContent = "Test failed";
+    $("latency-status").textContent = "Test failed · no responses received";
     $("latency-status").className = "status poor";
   } else {
-    const measured = results.length > 1 ? results.slice(1) : results;
-    const avg = measured.reduce((a, b) => a + b, 0) / measured.length;
-    medianValue = median(measured);
-    const min = Math.min(...measured);
-    const max = Math.max(...measured);
-    const changes = measured.slice(1).map((value, i) => Math.abs(value - measured[i]));
-    const jitter = changes.length ? median(changes) : 0;
-    const [label, cls] = latencyRating(medianValue);
+    // Ignore the first successful response as a warm-up sample, then remove
+    // statistical outliers without changing the packet-loss calculation.
+    const measured = results.slice(1);
+    const filtered = filterLatencyOutliers(measured);
 
-    $("latency-value").textContent = Math.round(medianValue);
-    $("latency-average").textContent = `${Math.round(avg)} ms`;
-    $("latency-min").textContent = `${Math.round(min)} ms`;
-    $("latency-max").textContent = `${Math.round(max)} ms`;
-    $("latency-jitter").textContent = `${Math.round(jitter)} ms`;
-    $("latency-status").textContent = loss ? `${label} · ${loss}% loss` : label;
-    $("latency-status").className = `status ${cls}`;
+    if (filtered.length < 3) {
+      $("latency-status").textContent = "Not enough valid samples · run the test again";
+      $("latency-status").className = "status fair";
+    } else {
+      enoughSamples = true;
+      const avg = filtered.reduce((a, b) => a + b, 0) / filtered.length;
+      medianValue = median(filtered);
+      const min = Math.min(...filtered);
+      const max = Math.max(...filtered);
+      const changes = filtered.slice(1).map((value, i) => Math.abs(value - filtered[i]));
+      const jitter = changes.length ? median(changes) : 0;
+      const [label, cls] = latencyRating(medianValue);
+
+      $("latency-value").textContent = Math.round(medianValue);
+      $("latency-average").textContent = `${Math.round(avg)} ms`;
+      $("latency-min").textContent = `${Math.round(min)} ms`;
+      $("latency-max").textContent = `${Math.round(max)} ms`;
+      $("latency-jitter").textContent = `${Math.round(jitter)} ms`;
+      $("latency-status").textContent = loss ? `${label} · ${loss.toFixed(0)}% loss` : label;
+      $("latency-status").className = `status ${cls}`;
+    }
   }
 
-  if (medianValue !== null) {
+  if (medianValue !== null && enoughSamples) {
     try {
       await submitResult("/api/results/latency", { latencyMs: medianValue });
       setCooldown("latency", 20);
@@ -476,9 +541,14 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-async function loadResults() {
-  $("results-message").textContent = "Loading latest results…";
-  $("results-message").className = "results-message";
+async function loadResults({ silent = false } = {}) {
+  if (resultsLoading) return;
+  resultsLoading = true;
+
+  if (!silent) {
+    $("results-message").textContent = "Loading latest results…";
+    $("results-message").className = "results-message";
+  }
 
   try {
     const response = await fetch("/api/results", { cache: "no-store" });
@@ -486,11 +556,18 @@ async function loadResults() {
 
     if (!response.ok) throw new Error(data.error || "Unable to load results.");
 
+    // Do not repaint hidden content after the user has switched tabs.
+    if (activeTab !== "results") return;
+
     renderResults(data.results || []);
-    $("results-message").textContent = `Showing the latest results from ${data.results.length} participant${data.results.length === 1 ? "" : "s"}.`;
+    $("results-message").textContent = `Showing the latest results from ${data.results.length} participant${data.results.length === 1 ? "" : "s"} · updates every 5 seconds.`;
+    $("results-message").className = "results-message";
   } catch (error) {
+    if (activeTab !== "results") return;
     $("results-message").textContent = error.message;
     $("results-message").className = "results-message error";
+  } finally {
+    resultsLoading = false;
   }
 }
 
